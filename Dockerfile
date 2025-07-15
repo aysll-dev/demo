@@ -1,25 +1,30 @@
-
-FROM openjdk:17-jdk as builder
+# Stage 1: Build the application (if not already built) or just copy the JAR
+# Using a JDK image for this stage, even if just copying, is good practice
+# as it provides a consistent environment.
+FROM openjdk:17-jdk-slim AS builder
 
 # Set the working directory inside the container
-WORKDIR /workspace/app
+WORKDIR /app
 
-# Copy the Gradle wrapper and build files to leverage Docker layer caching
-COPY gradlew .
-COPY gradle gradle
+# Copy the pre-built JAR file into the container
+# Assuming the Dockerfile is in the root of your project,
+# and the JAR is at build/libs/demo-0.0.1-SNAPSHOT.jar relative to that.
+COPY build/libs/demo-0.0.1-SNAPSHOT.jar app.jar
 
-# Copy the application source code
-COPY src src
+# Stage 2: Create the final, smaller runtime image
+# Using a JRE-only image for a smaller attack surface and image size
+# Changed to eclipse-temurin:17-jre-jammy as openjdk:17-jre-slim was not found.
+FROM eclipse-temurin:17-jre-jammy
 
-# Build the application, creating the .jar file.
-# The --no-daemon flag is recommended for containerized builds.
-RUN ./gradlew build --no-daemon
+# Set the working directory
+WORKDIR /app
 
-# Copy only the built .jar file from the 'builder' stage
-COPY --from=builder /workspace/app/build/libs/*.jar app.jar
+# Copy the JAR from the builder stage
+COPY --from=builder /app/app.jar .
 
-# Expose port 8080 (the default for many web applications like Spring Boot)
+# Expose the port that the Spring Boot application runs on (default is 8080)
 EXPOSE 8080
 
-# The command to run when the container starts
-ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+# Define the entry point for the application
+# This command will run when the container starts
+ENTRYPOINT ["java", "-jar", "app.jar"]
