@@ -6,9 +6,14 @@ FROM openjdk:17-jdk-slim AS builder
 # Set the working directory inside the container
 WORKDIR /app
 
+# For debugging: List contents of the current directory to verify build context
+# This helps confirm if 'build/libs/demo-0.0.1-SNAPSHOT.jar' is accessible.
+RUN ls -l
+
 # Copy the pre-built JAR file into the container
-# Assuming the Dockerfile is in the root of your project,
-# and the JAR is at build/libs/demo-0.0.1-SNAPSHOT.jar relative to that.
+# IMPORTANT: The source path 'build/libs/demo-0.0.1-SNAPSHOT.jar' is relative
+# to the Docker build context (the directory where you run 'docker build').
+# Ensure this file exists at this path relative to your build command.
 COPY build/libs/demo-0.0.1-SNAPSHOT.jar app.jar
 
 # Stage 2: Create the final, smaller runtime image
@@ -28,3 +33,4 @@ EXPOSE 8080
 # Define the entry point for the application
 # This command will run when the container starts
 ENTRYPOINT ["java", "-jar", "app.jar"]
+
